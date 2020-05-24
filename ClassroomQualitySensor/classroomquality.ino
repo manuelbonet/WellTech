@@ -7,7 +7,7 @@
 
 //BEFORE LOADING THE CODE
 //Remember to change NWKSKEY, APPSKEY and DEVADDR to whichever values are set on your TheThingsNetwork application and device
-//If you have range from a multiple channel gateway, uncomment the definitions for all of the other channels
+//If you are in range of a multiple channel gateway, uncomment the definitions for all of the other channels
 
 #include <lmic.h>
 #include <hal/hal.h>
