@@ -24,7 +24,7 @@ The sensors used for the project are:
 * Anemometer and wind vane (we used [these](https://es.aliexpress.com/item/33019729997.html), specifically the ones that output a 0-5V signal)
 * Trimmer potentiometer (to calibrate the wind direction)
 * MH-Z14A
-* Push button (to calibrate the sensor if it were needed)
+* Push button (to calibrate the CO<sub>2</sub> sensor if it were needed)
 
 A functional diagram of the wiring can be found below.
 
