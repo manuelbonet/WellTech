@@ -1,6 +1,6 @@
 //PINS
 //Screen: 4 (SDA), 15 (SCL), 16 (RST)
-//General I2C (BME280, QMC5883L): 21 (SDA), 22 (SCL)
+//General I2C (BME280): 21 (SDA), 22 (SCL)
 //OneWire: 17
 //Wind speed: 36
 //Wind direction: 37
