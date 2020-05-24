@@ -8,6 +8,7 @@
 //BEFORE LOADING THE CODE
 //Remember to change NWKSKEY, APPSKEY and DEVADDR to whichever values are set on your TheThingsNetwork application and device
 //If you are in range of a multiple channel gateway, uncomment the definitions for all of the other channels
+//Before using the values of decibels, remember to calibrate the microphones
 
 #include <lmic.h>
 #include <hal/hal.h>
