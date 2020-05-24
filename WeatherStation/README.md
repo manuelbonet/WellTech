@@ -109,6 +109,18 @@ function Converter(decoded, port) {
 
 These two snippets are prepared to have the ThingSpeak channels in the same order as written in the [Parameters](#parameters) section.
 
+## Best practices for measurements
+
+There are several things that should be considered when deciding the structure and the location for the weather station collected in the World Meteorological Organizations' [Guide to Meteorological Instruments and Methods of Observation](https://library.wmo.int/index.php?lvl=notice_display&id=12407). However, some of these requirements turn out to be very difficult to satisfy with a setup like ours, especially those related to wind. Nevertheless, the data collected with such a weather station, although not perfect, is more than good enough to be able to learn from.
+
+Given that these criteria are almost impossible to follow in the context of a school, it is very important to place the anemometer and vane as high and as far away as possible from any obstacle even if they are not met. Therefore, we suggest placing the weather station as far away from any tall buildings as possible and having the anemometer and wind vane at a height of at least 2 m.
+
+## Solar power
+
+If the weather station is solar powered, other factors should also be considered, the main one being that the weather station should be placed in such a place where ideally no shadow can be cast over the solar panel.
+
+In terms of which solar panel and battery to choose, it is important to calculate their sizes. There are websites online and mobile apps that make this process easier. The power consumption of the weather station (with a 30% safety margin) is of 1.8W or 43.2Wh/day. Regarding the position of the solar panel, it should be pointing towards the South in the Northern Hemisphere and the North in the Southern Hemisphere, and its tilt should be appropriate to the season of year and the geographical latitude.
+
 ## Cost
 
 This is not a cheap project, it cost us around €300 in components to build it. However, there are things that can be removed to lower the price to a much more affordable price point.
