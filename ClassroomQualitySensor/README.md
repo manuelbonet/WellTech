@@ -30,7 +30,7 @@ A functional diagram of the wiring can be found below.
 
 ## Software
 
-The TTGO LoRa32 board can be programmed with Arduino IDE after installing the board through the board manager. The main code (weatherstation.ino) depends on the libraries that have to be added before trying to compile it. The libraries are property of their respective owners and they are under their respective licenses. I have uploaded them to the folder as a way to simplify finding and installing them.
+The TTGO LoRa32 board can be programmed with Arduino IDE after installing the board through the board manager. The main code (classroomquality.ino) depends on the libraries that have to be added before trying to compile it. The libraries are property of their respective owners and they are under their respective licenses. I have uploaded them to the folder as a way to simplify finding and installing them.
 
 The measured values are sent through the TTN network as comma-separated values and they have to be parsed before they arrive to the ThingSpeak integration. To decode and convert this data, the following snippets are needed under "Payload format":
 
