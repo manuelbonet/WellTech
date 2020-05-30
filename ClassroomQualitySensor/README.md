@@ -26,7 +26,7 @@ The sensors used for the project are:
 
 A functional diagram of the wiring can be found below.
 
-![Wiring](https://raw.githubusercontent.com/manuelbonet/WellTech/master/ClassroomQualitySensor/images/Diagram%20-%20Classroom%20quality%20sensor.jpg)
+![Wiring](https://raw.githubusercontent.com/manuelbonet/WellTech/master/ClassroomQualitySensor/images/Diagram%20-%20Classroom%20quality%20sensor.png)
 
 ## Software
 
