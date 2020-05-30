@@ -90,7 +90,7 @@ These two snippets are prepared to have the ThingSpeak channels in the same orde
 
 ## Sound calibration
 
-Due to the fact that electret microphones do not output the volume in decibels of the sound they receive, a relationship between the peak-to-peak voltage and the volume needs to be found. [Here](https://docs.google.com/spreadsheets/d/1mHTgkDXV53TCKcUPq5pmppE6GQpHShiHMCgk4wV-P8s/edit?usp=sharing) is a spreadsheet that calculates this equivalence given some empirical measurements.
+Due to the fact that electret microphones do not output the volume of the sound they capture in decibels, a relationship between the peak-to-peak voltage and the volume needs to be found. [Here](https://docs.google.com/spreadsheets/d/1mHTgkDXV53TCKcUPq5pmppE6GQpHShiHMCgk4wV-P8s/edit?usp=sharing) is a spreadsheet that calculates this equivalence given some empirical measurements.
 
 ## Box
 
