@@ -28,7 +28,7 @@ The sensors used for the project are:
 
 A functional diagram of the wiring can be found below.
 
-![Wiring](https://raw.githubusercontent.com/manuelbonet/WellTech/master/WeatherStation/images/Weather%20station%20diagram.jpg)
+![Wiring](https://raw.githubusercontent.com/manuelbonet/WellTech/master/WeatherStation/images/Diagram%20-%20Weather%20station.png)
 
 ## Software
 
