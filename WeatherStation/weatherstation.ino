@@ -1,3 +1,6 @@
+//VERSION
+//Date: 2020-05-31
+
 //PINS
 //Screen: 4 (SDA), 15 (SCL), 16 (RST)
 //General I2C (BME280): 21 (SDA), 22 (SCL)
@@ -9,7 +12,8 @@
 
 //BEFORE LOADING THE CODE
 //Remember to change NWKSKEY, APPSKEY and DEVADDR to whichever values are set on your TheThingsNetwork application and device
-//If you have range from a multiple channel gateway, uncomment the definitions for all of the other channels
+//If you are in range of a multiple channel gateway, change MULTICHANNEL to 1
+//Before using the values of decibels, remember to calibrate the microphones
 
 #include <math.h>
 #include <lmic.h>
@@ -26,18 +30,22 @@ static const PROGMEM u1_t APPSKEY[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x
 
 static const u4_t DEVADDR = 0x00000000 ;
 
+#define MULTICHANNEL 0
+
 void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-const byte disableABC[] = {0xFF, 0x01, 0x79, 0xA0, 0x00, 0x00, 0x00, 0x00, 0xE6};
-const byte readCO2[] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
-
 #define WIND_INTERVAL 1
 #define TX_INTERVAL 60
 
-unsigned long lastWind = 0;
-unsigned long lastTX = 0;
+unsigned long lastWind = - WIND_INTERVAL * 1000;
+unsigned long lastTX = - TX_INTERVAL * 1000;
+unsigned long millisOverflows = -1;
+bool sendValues = false;
+
+const byte disableABC[] = {0xFF, 0x01, 0x79, 0xA0, 0x00, 0x00, 0x00, 0x00, 0xE6};
+const byte readCO2[] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
 
 float insideTemperature;
 float temperature;
@@ -169,7 +177,7 @@ float analogReadVolts(unsigned int pin, unsigned int readings = 100) {
 void setup() {
   Wire.begin(4, 15);
   Serial.begin(115200);
-  Serial.println(F("Starting..."));
+  Serial.println("Starting...");
 
   bluetooth.begin("Weather station");
   bluetooth.setPin("2468");
@@ -208,17 +216,27 @@ void setup() {
 #endif
 
 #if defined(CFG_eu868)
+#if (MULTICHANNEL)
   LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-  /*
-    LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);
-    LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
-    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);
-  */
+  LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);
+  LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);
+#else
+  LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(1, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(2, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(3, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(4, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(5, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(6, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(7, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+  LMIC_setupChannel(8, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+#endif
 #elif defined(CFG_us915)
   LMIC_selectSubBand(1);
 #endif
@@ -226,165 +244,13 @@ void setup() {
   LMIC_setLinkCheckMode(0);
   LMIC.dn2Dr = DR_SF9;
   LMIC_setDrTxpow(DR_SF7, 14);
-
-  delay(500);
-
-  ds18b20.requestTemperatures();
-
-  insideTemperature = bme280.readTemperature();
-  temperature = ds18b20.getTempCByIndex(0);
-  pressure = bme280.readPressure() / 100;
-  insideHumidity = bme280.readHumidity();
-  humidity = constrain(insideHumidity * exp((18.768 - insideTemperature / 234.5) * (insideTemperature / (257.1 + insideTemperature)) - (18.768 - temperature / 234.5) * (temperature / (257.1 + temperature))), 0, 100);
-  dewPoint = 1.0 / 2.0 * (4379.991 - 234.5 * (log(humidity / 100) + (18.678 - temperature / 234.5) * (temperature / (257.14 + temperature))) - sqrt(pow(234.5 * (log(humidity / 100) + (18.678 - temperature / 234.5) * (temperature / (257.14 + temperature))) - 4379.991, 2) - 241197.32 * (log(humidity / 100) + (18.678 - temperature / 234.5) * (temperature / (257.14 + temperature)))));
-  maxWindSpeed = 43.2 * analogReadVolts(36);
-  windSpeed = 43.2 * analogReadVolts(36);
-  windDirection = round(6.95652173913 * analogReadVolts(37)) * 22.5;
-  float correctionAngle = floor(analogReadVolts(39) * 5) * 22.5; if (correctionAngle == 360) correctionAngle = 337.5;
-  adjustedWindDirection = windDirection - correctionAngle; while (adjustedWindDirection >= 360) adjustedWindDirection -= 360;  while (adjustedWindDirection < 0) adjustedWindDirection += 360;
-  averageWindDirection = adjustedWindDirection;
-  if (temperature >= 26 && humidity >= 40) {
-    apparentTemperature = -8.78469476 + 1.61139411 * temperature + 2.338548839 * humidity - 0.14611605 * temperature * humidity - 0.012308094 * pow(temperature, 2) - 0.016424828 * pow(humidity, 2) + 0.002211732 * pow(temperature, 2) * humidity + 0.00072546 * temperature * pow(humidity, 2) - 0.000003582 * pow(temperature, 2) * pow(humidity, 2);
-  } else if (temperature <= 10 && windSpeed >= 3.2) {
-    apparentTemperature =  13.1267 + 0.6215 * temperature - 11.37 * pow(maxWindSpeed * 1.5, 0.16) + 0.3965 * temperature * pow(maxWindSpeed * 1.5, 0.16);
-  } else {
-    apparentTemperature = temperature;
-  }
-
-  byte bufferCO2[9];
-  while (Serial1.available() > 0) {
-    Serial1.read();
-  }
-  Serial1.write(readCO2, 9);
-  Serial1.readBytes(bufferCO2, 9);
-  CO2 = (unsigned int)(bufferCO2[2] & B00011111) * 256 + (unsigned int)bufferCO2[3];
-
-  Serial.print("Time: ");
-  Serial.print(millis());
-  Serial.println(" ms");
-
-  Serial.print("Inside temperature: ");
-  Serial.print(insideTemperature, 2);
-  Serial.println(" °C");
-
-  Serial.print("Outside temperature: ");
-  Serial.print(temperature, 2);
-  Serial.println(" °C");
-
-  Serial.print("Dew point: ");
-  Serial.print(dewPoint, 2);
-  Serial.println(" °C");
-
-  Serial.print("Atmospheric pressure: ");
-  Serial.print(pressure, 2);
-  Serial.println(" hPa");
-
-  Serial.print("Inside humidity: ");
-  Serial.print(insideHumidity, 2);
-  Serial.println(" %");
-
-  Serial.print("Outside humidity: ");
-  Serial.print(humidity, 2);
-  Serial.println(" %");
-
-  Serial.print("Maximum wind speed: ");
-  Serial.print(maxWindSpeed, 2);
-  Serial.println(" km/h");
-
-  Serial.print("Average wind direction: ");
-  Serial.print(averageWindDirection, 1);
-  Serial.println("°");
-
-  Serial.print("Apparent temperature: ");
-  Serial.print(apparentTemperature, 2);
-  Serial.println(" °C");
-
-  Serial.print("CO2: ");
-  Serial.print(CO2);
-  Serial.println(" ppm");
-  Serial.println();
-
-
-
-  bluetooth.print("Time: ");
-  bluetooth.print(millis());
-  bluetooth.println(" ms");
-
-  bluetooth.print("Inside temperature: ");
-  bluetooth.print(insideTemperature, 2);
-  bluetooth.println(" *C");
-
-  bluetooth.print("Outside temperature: ");
-  bluetooth.print(temperature, 2);
-  bluetooth.println(" *C");
-
-  bluetooth.print("Dew point: ");
-  bluetooth.print(dewPoint, 2);
-  bluetooth.println(" *C");
-
-  bluetooth.print("Atmospheric pressure: ");
-  bluetooth.print(pressure, 2);
-  bluetooth.println(" hPa");
-
-  bluetooth.print("Inside humidity: ");
-  bluetooth.print(insideHumidity, 2);
-  bluetooth.println(" %");
-
-  bluetooth.print("Outside humidity: ");
-  bluetooth.print(humidity, 2);
-  bluetooth.println(" %");
-
-  bluetooth.print("Maximum wind speed: ");
-  bluetooth.print(maxWindSpeed, 2);
-  bluetooth.println(" km/h");
-
-  bluetooth.print("Average wind direction: ");
-  bluetooth.print(averageWindDirection, 1);
-  bluetooth.println("*");
-
-  bluetooth.print("Apparent temperature: ");
-  bluetooth.print(apparentTemperature, 2);
-  bluetooth.println(" *C");
-
-  bluetooth.print("CO2: ");
-  bluetooth.print(CO2);
-  bluetooth.println(" ppm");
-  bluetooth.println();
-
-  Wire.begin(4, 15);
-
-  int tempTX = lastTX;
-  int dayTX = 0;
-  int hourTX = 0;
-  int minuteTX = 0;
-
-  while (tempTX >= 86400E3) {
-    tempTX -= 86400E3;
-    dayTX++;
-  }
-  while (tempTX >= 3600E3) {
-    tempTX -= 3600E3;
-    hourTX++;
-  }
-  while (tempTX >= 60E3) {
-    tempTX -= 60E3;
-    minuteTX++;
-  }
-
-  display.fillRect(0, 0, 128, 32, 0);
-  display.setCursor(0, 0);
-  display.println("Day " + String(dayTX) + " " + ((hourTX < 10) ? "0" : "") + String(hourTX) + ":" + ((minuteTX < 10) ? "0" : "") + String(minuteTX));
-  display.println(String(temperature, 2) + "*C (" + String(apparentTemperature) + "*Cap)");
-  display.println(String(humidity, 2) + "% " + String(dewPoint, 2) + "*Cdew");
-  display.println(String(pressure, 2) + "hPa " + String(CO2) + "ppm");
-  display.display();
-
-  Wire.begin(21, 22);
 }
 
 void loop() {
-  if ((millis() > lastWind + 1000 * WIND_INTERVAL) && ((lastWind + 1000 * WIND_INTERVAL < lastWind) || (millis() + 1000 * WIND_INTERVAL > millis()))) {
-    lastWind = millis();
+  unsigned long millisNow = millis();
+
+  if ((millisNow >= (unsigned long)(lastWind + 1000 * WIND_INTERVAL)) && (((unsigned long)(lastWind + 1000 * WIND_INTERVAL) > lastWind) || ((unsigned long)(millisNow + 1000 * WIND_INTERVAL) > millisNow))) {
+    lastWind = millisNow;
 
     windSpeed = 43.2 * analogReadVolts(36);
     if (windSpeed > maxWindSpeed) {
@@ -405,13 +271,16 @@ void loop() {
     display.display();
   }
 
-  if ((millis() > lastTX + 1000 * TX_INTERVAL) && ((lastTX + 1000 * TX_INTERVAL < lastTX) || (millis() + 1000 * TX_INTERVAL > millis()))) {
+  if ((millisNow >= (unsigned long)(lastTX + 1000 * TX_INTERVAL)) && (((unsigned long)(lastTX + 1000 * TX_INTERVAL) > lastTX) || ((unsigned long)(millisNow + 1000 * TX_INTERVAL) > millisNow))) {
+    if (millisNow < lastTX){
+      millisOverflows++;
+    }
+
     lastTX = millis();
 
     Wire.begin(21, 22);
 
     ds18b20.requestTemperatures();
-
     insideTemperature = bme280.readTemperature();
     temperature = ds18b20.getTempCByIndex(0);
     delay(50);
@@ -437,9 +306,52 @@ void loop() {
     Serial1.readBytes(bufferCO2, 9);
     CO2 = (unsigned int)(bufferCO2[2] && B00011111) * 256 + (unsigned int)bufferCO2[3];
 
-    Serial.print("Time: ");
-    Serial.print(millis());
-    Serial.println(" ms");
+    uint64_t fullMillis = lastTX + 4294967296 * millisOverflows;
+    unsigned long fullMillisA = fullMillis / 1E16;
+    unsigned long fullMillisB = (fullMillis - fullMillisA * 1E16) / 1E8;
+    unsigned long fullMillisC = fullMillis - fullMillisA - fullMillisB;
+
+    uint64_t tempTX = fullMillis;
+    int dayTX = 0;
+    int hourTX = 0;
+    int minuteTX = 0;
+
+    while (tempTX >= 86400E3) {
+      tempTX -= 86400E3;
+      dayTX++;
+    }
+    while (tempTX >= 3600E3) {
+      tempTX -= 3600E3;
+      hourTX++;
+    }
+    while (tempTX >= 60E3) {
+      tempTX -= 60E3;
+      minuteTX++;
+    }
+
+    Serial.print("Time: day ");
+    Serial.print(dayTX);
+    Serial.print(" ");
+    if (hourTX < 10) {
+      Serial.print("0");
+    }
+    Serial.print(hourTX);
+    Serial.print(":");
+    if (minuteTX < 10) {
+      Serial.print("0");
+    }
+    Serial.print(minuteTX);
+    Serial.print(" (");
+    if (fullMillisA!=0){
+      Serial.print(fullMillisA);
+    }
+    if (fullMillisB!=0){
+      Serial.print(fullMillisB);
+    } else if (fullMillisA!=0){
+      Serial.print("00000000");
+    }
+    Serial.print(fullMillisC);
+    Serial.println(" ms)");
 
     Serial.print("Inside temperature: ");
     Serial.print(insideTemperature, 2);
@@ -478,13 +390,32 @@ void loop() {
     Serial.println(" °C");
 
     Serial.print("CO2: ");
-    Serial.print(CO2);
+    Serial.print(CO2, 0);
     Serial.println(" ppm");
-    Serial.println();
 
-    bluetooth.print("Time: ");
-    bluetooth.print(millis());
-    bluetooth.println(" ms");
+    bluetooth.print("Time: day ");
+    bluetooth.print(dayTX);
+    bluetooth.print(" ");
+    if (hourTX < 10) {
+      bluetooth.print("0");
+    }
+    bluetooth.print(hourTX);
+    bluetooth.print(":");
+    if (minuteTX < 10) {
+      bluetooth.print("0");
+    }
+    bluetooth.print(minuteTX);
+    bluetooth.print(" (");
+    if (fullMillisA!=0){
+      bluetooth.print(fullMillisA);
+    }
+    if (fullMillisB!=0){
+      bluetooth.print(fullMillisB);
+    } else if (fullMillisA!=0){
+      bluetooth.print("00000000");
+    }
+    bluetooth.print(fullMillisC);
+    bluetooth.println(" ms)");
 
     bluetooth.print("Inside temperature: ");
     bluetooth.print(insideTemperature, 2);
@@ -523,7 +454,7 @@ void loop() {
     bluetooth.println(" *C");
 
     bluetooth.print("CO2: ");
-    bluetooth.print(CO2);
+    bluetooth.print(CO2, 0);
     bluetooth.println(" ppm");
     bluetooth.println();
 
@@ -542,50 +473,37 @@ void loop() {
     text += "/";
     text += String(averageWindDirection, 1);
     text += "/";
-    text += (0 < CO2 && CO2 <= 5000 && CO2 != 256) ? String(CO2) : "";
+    text += (0 < CO2 && CO2 <= 5000 && CO2 != 256) ? String(CO2, 0) : "";
 
-    Serial.print("Sending: ");
-    Serial.println(text);
+    if (sendValues){
+      Serial.print("Sending: ");
+      Serial.println(text);
 
-    for (unsigned int i = 0; i < min(text.length(), sizeof(textBytes) / sizeof(textBytes[0])); i++) {
-      textBytes[i] = text.charAt(i);
+      for (unsigned int i = 0; i < min(text.length(), sizeof(textBytes) / sizeof(textBytes[0])); i++) {
+        textBytes[i] = text.charAt(i);
+      }
+
+      if (LMIC.opmode & OP_TXRXPEND) {
+        Serial.println(F("OP_TXRXPEND, not sending"));
+      } else {
+        LMIC_setTxData2(1, textBytes, text.length(), 0);
+        Serial.println(F("Packet queued"));
+      }
+    } else {
+      Serial.print("Not sending: ");
+      Serial.println(text);
     }
 
     Serial.println();
 
-    if (LMIC.opmode & OP_TXRXPEND) {
-      Serial.println(F("OP_TXRXPEND, not sending"));
-    } else {
-      LMIC_setTxData2(1, textBytes, text.length(), 0);
-      Serial.println(F("Packet queued"));
-    }
-
     Wire.begin(4, 15);
 
-    unsigned long tempTX = lastTX;
-    int dayTX = 0;
-    int hourTX = 0;
-    int minuteTX = 0;
-
-    while (tempTX >= 86400E3) {
-      tempTX -= 86400E3;
-      dayTX++;
-    }
-    while (tempTX >= 3600E3) {
-      tempTX -= 3600E3;
-      hourTX++;
-    }
-    while (tempTX >= 60E3) {
-      tempTX -= 60E3;
-      minuteTX++;
-    }
-
-    display.clearDisplay();
+    display.fillRect(0, 0, 128, 32, 0);
     display.setCursor(0, 0);
     display.println("Day " + String(dayTX) + " " + ((hourTX < 10) ? "0" : "") + String(hourTX) + ":" + ((minuteTX < 10) ? "0" : "") + String(minuteTX));
     display.println(String(temperature, 2) + "*C (" + String(apparentTemperature) + "*Cap)");
     display.println(String(humidity, 2) + "% " + String(dewPoint, 2) + "*Cdew");
-    display.println(String(pressure, 2) + "hPa " + String(CO2) + "ppm");
+    display.println(String(pressure, 2) + "hPa " + String(CO2, 0) + "ppm");
     display.display();
 
     Wire.begin(21, 22);
@@ -593,6 +511,8 @@ void loop() {
     maxWindSpeed = 0;
     cumulativeWindX = 0;
     cumulativeWindY = 0;
+
+    sendValues = true;
   }
 
   os_runloop_once();
