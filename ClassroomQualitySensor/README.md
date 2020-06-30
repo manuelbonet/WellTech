@@ -47,6 +47,7 @@ function Decoder(bytes, port) {
    }
    
    return {"text": text};
+}
 ```
 
 ```javascript
